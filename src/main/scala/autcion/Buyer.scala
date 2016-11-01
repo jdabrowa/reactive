@@ -1,6 +1,6 @@
 package autcion
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, LocalTime}
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorRef}
@@ -9,17 +9,15 @@ import autcion.Auction.{AuctionWon, BidRejected}
 
 import scala.util.Random
 
-object Buyer {
-
-
-}
 
 class Buyer(auctions: List[ActorRef]) extends Actor {
 
-  var auction: ActorRef
-  var lastPrice: Int = Random.nextInt(3)
+  private var _auction: ActorRef = null
+  def auction = _auction
+  def auction_= (r: ActorRef): Unit = _auction = r
+  var lastPrice: Int = 1 + Random.nextInt(3)
   def multiplier:Int = 2 + Random.nextInt(3)
-  def maxPrice = Random.nextInt(100)
+  def maxPrice = 15 + Random.nextInt(100)
 
   doWhatBuyerDoes()
 
@@ -27,30 +25,36 @@ class Buyer(auctions: List[ActorRef]) extends Actor {
 
     case(BidRejected) => {
       val newPrice = lastPrice * multiplier
-      log("Offer rejected, retrying with " + newPrice)
-      lastPrice = newPrice
-      bid()
+      if (newPrice <= maxPrice) {
+        log("Bid rejected, retrying with " + newPrice)
+        lastPrice = newPrice
+        bid()
+      } else {
+        log("Bid rejected, cannot offer more. Fold.")
+      }
     }
 
     case(AuctionWon) => {
-      log("Hurray! I bought " + self.path.name + " for " + lastPrice)
+      log("Hurray! I bought " + auction.path.name + " for " + lastPrice)
     }
 
   }
 
   def doWhatBuyerDoes(): Unit = {
 
-    TimeUnit.SECONDS.sleep(Random.nextInt(10))
+    TimeUnit.MILLISECONDS.sleep(Random.nextInt(1000))
     auction = auctions(Random.nextInt(auctions.size))
     bid()
   }
 
   def bid(): Unit = {
-    log(self.path.name + ": bidding auction" + auction.path.name + " with price " + lastPrice)
+    TimeUnit.MILLISECONDS.sleep(Random.nextInt(1000))
+    log("bidding auction " + auction.path.name + " with price " + lastPrice)
+
     auction ! Auction.Bid(self, lastPrice)
   }
 
   def log(msg: String): Unit = {
-    println ("" + Thread.currentThread().getName + " [" + new LocalDateTime().toString + "] > " + msg)
+    println ("" + Thread.currentThread().getName() + " [" + LocalTime.now().toString + "] " + self.path.name + " > " + msg)
   }
 }

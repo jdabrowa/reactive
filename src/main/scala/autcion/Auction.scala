@@ -1,10 +1,9 @@
 package autcion
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, LocalTime}
 
-import akka.actor.{ActorRef, FSM}
+import akka.actor.{ActorRef, Cancellable, FSM}
 import autcion.Auction._
-
 import java.lang.Thread
 
 import scala.concurrent.duration._
@@ -25,6 +24,7 @@ object Auction {
 
   // Ingress events
   case class Bid(bidder: ActorRef, offer: Int)
+  case object Relist
 
   // Egress events
   case class ItemSold(winner: ActorRef, finalPrice: Int)
@@ -38,10 +38,11 @@ object Auction {
   case object DeleteTimerExpired
 }
 
-// TODO: make actor and timer event stateful with regard of version, to make sure we're reacting to right events
-// ToDo: Or maybe cancel scheduled job?
-
 class Auction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extends FSM[State, AuctionDetails] {
+
+  private var _scheduledMessage: Cancellable = null
+  def scheduledMessage = _scheduledMessage
+  def scheduledMessage_=(m: Cancellable): Unit =  _scheduledMessage = m
 
   startWith(Created, InitialState(startingPrice))
   val system = akka.actor.ActorSystem("system")
@@ -50,7 +51,7 @@ class Auction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extend
 
   when(Created) {
     case(Event(BidTimerExpired, _)) => {
-      system.scheduler.scheduleOnce(durationSeconds seconds, self, DeleteTimerExpired)
+      scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, DeleteTimerExpired)
       goto(Ignored)
     }
     case(Event(Bid(bidder, offeredPrice), InitialState(initialPrice))) if offeredPrice > initialPrice => {
@@ -67,7 +68,7 @@ class Auction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extend
     case(Event(BidTimerExpired, Bidded(winner, finalOffer))) => {
       winner ! AuctionWon
       seller ! ItemSold
-      system.scheduler.scheduleOnce(durationSeconds seconds, self, DeleteTimerExpired)
+      scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, DeleteTimerExpired)
       goto(Sold)
     }
   }
@@ -76,6 +77,11 @@ class Auction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extend
     case(Event(DeleteTimerExpired, _)) => {
       log(self.path.name + " completed: no bid")
       stop
+    }
+    case(Event(Relist, _)) => {
+      log(self.path.name + " relisting")
+      scheduledMessage.cancel()
+      goto(Created) using InitialState(startingPrice)
     }
   }
 
@@ -94,7 +100,7 @@ class Auction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extend
   }
 
   def log(msg: String): Unit = {
-    println ("" + Thread.currentThread().getName + " [" + new LocalDateTime().toString + "] > " + msg)
+    println ("" + Thread.currentThread().getName() + " [" + LocalTime.now() + "] > " + msg)
   }
 
 }
