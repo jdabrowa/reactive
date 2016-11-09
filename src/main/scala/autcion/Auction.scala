@@ -1,10 +1,10 @@
 package autcion
 
-import java.time.{LocalDateTime, LocalTime}
+import java.time.LocalTime
 
-import akka.actor.{ActorRef, Cancellable, FSM}
+import akka.actor.{Actor, ActorRef, Cancellable, FSM}
 import autcion.Auction._
-import java.lang.Thread
+import autcion.AuctionSearch.RegisterAuction
 
 import scala.concurrent.duration._
 
@@ -38,16 +38,23 @@ object Auction {
   case object DeleteTimerExpired
 }
 
-class Auction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extends FSM[State, AuctionDetails] {
-
+class Auction {
   private var _scheduledMessage: Cancellable = null
   def scheduledMessage = _scheduledMessage
   def scheduledMessage_=(m: Cancellable): Unit =  _scheduledMessage = m
 
-  startWith(Created, InitialState(startingPrice))
   val system = akka.actor.ActorSystem("system")
+}
+
+class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, description: String) extends Auction with FSM[State, AuctionDetails] {
+
   import system.dispatcher
-  system.scheduler.scheduleOnce(durationSeconds seconds, self, BidTimerExpired)
+
+  startWith(Created, InitialState(startingPrice))
+
+  context.actorSelection("../auctionSearch") ! RegisterAuction(description)
+
+  scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, BidTimerExpired)
 
   when(Created) {
     case(Event(BidTimerExpired, _)) => {
@@ -101,6 +108,50 @@ class Auction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extend
 
   def log(msg: String): Unit = {
     println ("" + Thread.currentThread().getName() + " [" + LocalTime.now() + "] > " + msg)
+  }
+
+}
+
+class NativeAkkaAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extends Auction with Actor {
+
+  import system.dispatcher
+
+  var currentPrice : Int = startingPrice
+  var currentWinner : ActorRef = _
+
+  scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, BidTimerExpired)
+
+  override def receive: Receive = {
+    case Bid(bidder, offer) if offer >= currentPrice => {
+      currentPrice = offer
+      currentWinner = bidder
+      bidder ! BidSuccessful
+      context become activated
+    }
+  }
+
+  def created: Receive = {
+    case Bid(bidder, offer) if offer > currentPrice => {
+      currentPrice = offer
+      currentWinner = bidder
+      bidder ! BidSuccessful
+      context become activated
+    }
+    case BidTimerExpired => {
+
+    }
+  }
+
+  def activated: Receive = {
+    null
+  }
+
+  def ignored: Receive = {
+null
+  }
+
+  def sold: Receive = {
+null
   }
 
 }

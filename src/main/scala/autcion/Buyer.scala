@@ -1,57 +1,58 @@
 package autcion
 
-import java.time.{LocalDateTime, LocalTime}
+import java.time.LocalTime
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorRef}
-import akka.actor.Actor.Receive
 import autcion.Auction.{AuctionWon, BidRejected}
+import autcion.AuctionSearch.{Query, SearchResult}
 
 import scala.util.Random
+import scala.collection.mutable
 
+class Buyer(keyword: String) extends Actor {
 
-class Buyer(auctions: List[ActorRef]) extends Actor {
+  var auctions: List[ActorRef] = _
 
-  private var _auction: ActorRef = null
-  def auction = _auction
-  def auction_= (r: ActorRef): Unit = _auction = r
-  var lastPrice: Int = 1 + Random.nextInt(3)
-  def multiplier:Int = 2 + Random.nextInt(3)
+  var lastPrices: mutable.Map[ActorRef, Integer] = mutable.Map.empty[ActorRef, Integer]
+  def multiplier: Int = 2 + Random.nextInt(3)
   def maxPrice = 15 + Random.nextInt(100)
 
-  doWhatBuyerDoes()
+  TimeUnit.MILLISECONDS.sleep(Random.nextInt(1000))
+  context.actorSelection("../auctionSearch") ! Query(keyword)
 
   override def receive: Receive = {
-
+    case SearchResult(auctionList) => {
+      for(auction <- auctionList) {
+        val price = 1 + Random.nextInt(3)
+        lastPrices += (auction -> price)
+        auctions :+ auction
+        bid(auction)
+      }
+    }
     case(BidRejected) => {
+      val lastPrice = lastPrices(sender)
       val newPrice = lastPrice * multiplier
       if (newPrice <= maxPrice) {
         log("Bid rejected, retrying with " + newPrice)
-        lastPrice = newPrice
-        bid()
+        lastPrices(sender) = newPrice
+        bid(sender)
       } else {
         log("Bid rejected, cannot offer more. Fold.")
       }
     }
 
     case(AuctionWon) => {
-      log("Hurray! I bought " + auction.path.name + " for " + lastPrice)
+      log("Hurray! I bought " + sender.path.name + " for " + lastPrices(sender))
     }
-
   }
 
-  def doWhatBuyerDoes(): Unit = {
 
+  def bid(auction: ActorRef): Unit = {
     TimeUnit.MILLISECONDS.sleep(Random.nextInt(1000))
-    auction = auctions(Random.nextInt(auctions.size))
-    bid()
-  }
+    log("bidding auction " + auction.path.name + " with price " + lastPrices(auction))
 
-  def bid(): Unit = {
-    TimeUnit.MILLISECONDS.sleep(Random.nextInt(1000))
-    log("bidding auction " + auction.path.name + " with price " + lastPrice)
-
-    auction ! Auction.Bid(self, lastPrice)
+    auction ! Auction.Bid(self, lastPrices(auction))
   }
 
   def log(msg: String): Unit = {

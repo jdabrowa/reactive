@@ -1,33 +1,18 @@
-import akka.actor.{Actor, ActorSystem, Props}
-import autcion.{Auction, Buyer}
-
-import scala.util.Random
+import akka.actor.{ActorSystem, Props}
+import autcion._
 
 object Main extends App {
 
   var system = ActorSystem("system")
 
-  var seller = system.actorOf(Props[A], "seller")
+  val auctionNames = List(
+    ("Audi A6 - Niemiec plakal jak sprzedawal", "audiA6"),
+    ("Opel Astra Igla Polecam", "opel"),
+    ("HIT! Wyciskarka do czosnku z bluetooth", "wyciskarka"),
+    ("Samochodzik zdalnie sterowany na bluetooth", "samochodzik"),
+    ("Blok rysunkowy format A6", "blok")
+  )
 
-  var numAuctions = 4
-  var numBidders = 2
-
-  var auctions = (
-    for(i <- 1 to numAuctions) yield {
-      system.actorOf(Props(new Auction(seller, 1 + Random.nextInt(3), 5 + Random.nextInt(5))), "Auction" + i)
-    }).toList
-
-  for(i <- 1 to numBidders){
-    system.actorOf(Props(new Buyer(auctions)), "Buyer" + i)
-  }
-
-  class A extends Actor {
-    override def receive: Receive = {
-      case(_) => {
-
-      }
-    }
-  }
-
-
+  system.actorOf(Props[AuctionSearch], "auctionSearch")
+  system.actorOf(Props(new Seller(auctionNames)), "seller")
 }
