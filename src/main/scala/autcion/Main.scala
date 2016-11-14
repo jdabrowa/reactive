@@ -15,4 +15,10 @@ object Main extends App {
 
   system.actorOf(Props[AuctionSearch], "auctionSearch")
   system.actorOf(Props(new Seller(auctionNames)), "seller")
+
+  Thread.sleep(100L)
+
+  system.actorOf(Props(new Buyer("a6")), "A6_buyer")
+  system.actorOf(Props(new Buyer("bluetooth")), "Bluetoot_buyer")
+  system.actorOf(Props(new Buyer("igla")), "Igla_buyer")
 }

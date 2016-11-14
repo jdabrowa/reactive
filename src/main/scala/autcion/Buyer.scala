@@ -12,7 +12,7 @@ import scala.collection.mutable
 
 class Buyer(keyword: String) extends Actor {
 
-  var auctions: List[ActorRef] = _
+  var auctions: mutable.MutableList[ActorRef] = mutable.MutableList.empty[ActorRef]
 
   var lastPrices: mutable.Map[ActorRef, Integer] = mutable.Map.empty[ActorRef, Integer]
   def multiplier: Int = 2 + Random.nextInt(3)

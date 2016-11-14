@@ -43,16 +43,17 @@ class Auction {
   def scheduledMessage = _scheduledMessage
   def scheduledMessage_=(m: Cancellable): Unit =  _scheduledMessage = m
 
-  val system = akka.actor.ActorSystem("system")
 }
 
 class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, description: String) extends Auction with FSM[State, AuctionDetails] {
+
+  val system = context.system
 
   import system.dispatcher
 
   startWith(Created, InitialState(startingPrice))
 
-  context.actorSelection("../auctionSearch") ! RegisterAuction(description)
+  context.actorSelection("/user/auctionSearch") ! RegisterAuction(description)
 
   scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, BidTimerExpired)
 
@@ -113,6 +114,8 @@ class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, des
 }
 
 class NativeAkkaAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extends Auction with Actor {
+
+  val system = context.system
 
   import system.dispatcher
 

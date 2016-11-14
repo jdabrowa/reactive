@@ -12,7 +12,7 @@ object Seller {
 
 class Seller(names: List[(String, String)]) extends Actor {
 
-  val system = ActorSystem("system")
+  val system = context.system
   var auctions = mutable.Map.empty[ActorRef, String]
 
   for(auctionName <- names) {
