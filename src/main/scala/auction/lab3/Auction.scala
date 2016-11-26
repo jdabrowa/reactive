@@ -2,8 +2,8 @@ package auction.lab3
 
 import java.time.LocalTime
 
-import akka.actor.{Actor, ActorRef, Cancellable, FSM}
-import auction.lab2.Auction._
+import akka.actor.{ActorRef, Cancellable, FSM}
+import auction.lab3.Auction._
 import auction.lab3.AuctionSearch.RegisterAuction
 
 import scala.concurrent.duration._
@@ -62,20 +62,25 @@ class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, des
       scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, DeleteTimerExpired)
       goto(Ignored)
     }
-    case(Event(Bid(bidder, offeredPrice), InitialState(initialPrice))) if offeredPrice > initialPrice => {
+    case(Event(Bid(bidder, offeredPrice), InitialState(initialPrice))) if offeredPrice >= initialPrice => {
       bidder ! BidSuccessful
       goto(Activated) using Bidded(bidder, offeredPrice)
+    }
+    case(Event(Bid(bidder, offeredPrice), InitialState(initialPrice))) => {
+      bidder ! BidRejected
+      stay
     }
   }
 
   when(Activated) {
     case(Event(Bid(newBidder, offeredPrice), Bidded(previousBidder, currentPrice))) if offeredPrice > currentPrice => {
       newBidder ! BidSuccessful
+      previousBidder ! BidRejected
       stay using Bidded(newBidder, offeredPrice)
     }
     case(Event(BidTimerExpired, Bidded(winner, finalOffer))) => {
       winner ! AuctionWon
-      seller ! ItemSold
+      seller ! ItemSold(winner, finalOffer)
       scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, DeleteTimerExpired)
       goto(Sold)
     }
@@ -108,7 +113,7 @@ class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, des
   }
 
   def log(msg: String): Unit = {
-    println ("" + Thread.currentThread().getName() + " [" + LocalTime.now() + "] > " + msg)
+    println ("" + Thread.currentThread().getName + " [" + LocalTime.now() + "] > " + msg)
   }
 
 }

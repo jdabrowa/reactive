@@ -1,28 +1,32 @@
 package auction.lab3
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorSystem, Props}
+
+import scala.util.Random
 
 object Main extends App {
 
   var system = ActorSystem("system")
 
-  def runLab3: ActorRef = {
+  runLab3
+
+  def runLab3: Any = {
     val auctionNames = List(
-      ("Audi A6 - Niemiec plakal jak sprzedawal", "audiA6"),
       ("Opel Astra Igla Polecam", "opel"),
       ("HIT! Wyciskarka do czosnku z bluetooth", "wyciskarka"),
-      ("Samochodzik zdalnie sterowany na bluetooth", "samochodzik"),
-      ("Blok rysunkowy format A6", "blok")
+      ("Samochodzik zdalnie niby opel sterowany na bluetooth", "samochodzik")
     )
 
     system.actorOf(Props[AuctionSearch], "auctionSearch")
-    system.actorOf(Props(new Seller(auctionNames)), "seller")
+    system.actorOf(Props(new Seller(auctionNames, Seller.defaultChildMaker(system))), "seller")
 
     Thread.sleep(100L)
 
-    system.actorOf(Props(new Buyer("a6")), "A6_buyer")
-    system.actorOf(Props(new Buyer("bluetooth")), "Bluetoot_buyer")
-    system.actorOf(Props(new Buyer("igla")), "Igla_buyer")
+    for(keyword <- List("hit", "bluetooth", "opel")) {
+      for(i <- 1 to 2 + Random.nextInt(3)) {
+        system.actorOf(Props(new Buyer(keyword)), s"${keyword}_buyer_$i")
+      }
+    }
   }
 
 }

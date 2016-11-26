@@ -1,12 +1,12 @@
 package auction.lab3
 
 import akka.actor.ActorSystem
-import akka.testkit.{TestActorRef, TestKit}
-import auction.lab3.AuctionSearch.{RegisterAuction, SearchResult}
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import auction.lab3.AuctionSearch.{Query, RegisterAuction, SearchResult}
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 
 class AuctionSearchTest extends TestKit(ActorSystem("SearchSpec"))
-  with WordSpecLike with BeforeAndAfterAll {
+  with WordSpecLike with BeforeAndAfterAll with ImplicitSender {
 
   "AuctionSearch must" must {
 
@@ -26,7 +26,10 @@ class AuctionSearchTest extends TestKit(ActorSystem("SearchSpec"))
       val actorRef = TestActorRef[AuctionSearch]
       actorRef ! RegisterAuction("some auction description")
       actorRef ! RegisterAuction("other auction description")
-      expectMsgType[SearchResult]
+      actorRef ! Query("auction")
+      expectMsgPF() {
+        case SearchResult(auctions) => auctions.size == 2
+      }
     }
 
   }

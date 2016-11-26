@@ -13,6 +13,6 @@ class Seller() extends Actor {
 
   override def receive: Receive = {
     case ItemSold(winner, finalPrice, name) =>
-      println(s"Item $name sold to $winner for $finalPrice")
+      println(s"Item $name sold to ${winner.path.name} for $finalPrice")
   }
 }

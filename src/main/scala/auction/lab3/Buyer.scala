@@ -34,7 +34,6 @@ class Buyer(keyword: String) extends Actor {
       val lastPrice = lastPrices(sender)
       val newPrice = lastPrice * multiplier
       if (newPrice <= maxPrice) {
-        log("Bid rejected, retrying with " + newPrice)
         lastPrices(sender) = newPrice
         bid(sender)
       } else {
@@ -47,15 +46,14 @@ class Buyer(keyword: String) extends Actor {
     }
   }
 
-
   def bid(auction: ActorRef): Unit = {
-    TimeUnit.MILLISECONDS.sleep(Random.nextInt(1000))
+    TimeUnit.MILLISECONDS.sleep(Random.nextInt(300))
     log("bidding auction " + auction.path.name + " with price " + lastPrices(auction))
 
     auction ! Auction.Bid(self, lastPrices(auction))
   }
 
   def log(msg: String): Unit = {
-    println ("" + Thread.currentThread().getName() + " [" + LocalTime.now().toString + "] " + self.path.name + " > " + msg)
+    println (" [" + LocalTime.now().toString + "] " + self.path.name + " > " + msg)
   }
 }

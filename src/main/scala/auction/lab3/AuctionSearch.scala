@@ -17,11 +17,11 @@ class AuctionSearch() extends Actor {
 
   override def receive: Receive = {
     case RegisterAuction(auctionName) => {
-      auctions += (auctionName -> sender())
+      auctions += (auctionName -> sender)
     }
     case Query(keyword: String) => {
       def auctionMatch(description: String, keyword: String): Boolean = { description.toLowerCase().contains(keyword.toLowerCase()) }
-      val result: List[ActorRef] = auctions.keys.filter { auctionMatch(_, keyword) }.map( auctions(_) ).toList
+      val result: List[ActorRef] = auctions.keys.filter { auctionMatch(_, keyword) }.map{ auctions }.toList
       sender ! SearchResult(result)
     }
   }
