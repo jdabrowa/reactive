@@ -1,7 +1,7 @@
-package autcion
+package auction.lab3
 
 import akka.actor.{Actor, ActorRef}
-import autcion.AuctionSearch.{Query, RegisterAuction, SearchResult}
+import auction.lab3.AuctionSearch.{Query, RegisterAuction, SearchResult}
 
 import scala.collection.mutable
 

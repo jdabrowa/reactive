@@ -1,14 +1,14 @@
-package autcion
+package auction.lab3
 
 import java.time.LocalTime
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorRef}
-import autcion.Auction.{AuctionWon, BidRejected}
-import autcion.AuctionSearch.{Query, SearchResult}
+import auction.lab3.Auction.{AuctionWon, BidRejected}
+import auction.lab3.AuctionSearch.{Query, SearchResult}
 
-import scala.util.Random
 import scala.collection.mutable
+import scala.util.Random
 
 class Buyer(keyword: String) extends Actor {
 

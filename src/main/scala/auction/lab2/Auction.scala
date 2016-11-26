@@ -1,10 +1,9 @@
-package autcion
+package auction.lab2
 
 import java.time.LocalTime
 
 import akka.actor.{Actor, ActorRef, Cancellable, FSM}
-import autcion.Auction._
-import autcion.AuctionSearch.RegisterAuction
+import auction.lab2.Auction._
 
 import scala.concurrent.duration._
 
@@ -27,7 +26,7 @@ object Auction {
   case object Relist
 
   // Egress events
-  case class ItemSold(winner: ActorRef, finalPrice: Int)
+  case class ItemSold(winner: ActorRef, finalPrice: Int, name: String)
   case object BidSuccessful
   case object BidRejected
   case object AuctionWon
@@ -52,8 +51,6 @@ class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, des
   import system.dispatcher
 
   startWith(Created, InitialState(startingPrice))
-
-  context.actorSelection("/user/auctionSearch") ! RegisterAuction(description)
 
   scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, BidTimerExpired)
 
@@ -113,7 +110,7 @@ class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, des
 
 }
 
-class NativeAkkaAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int) extends Auction with Actor {
+class NativeAkkaAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, name: String) extends Auction with Actor {
 
   val system = context.system
 
@@ -122,8 +119,9 @@ class NativeAkkaAuction(seller: ActorRef, startingPrice: Int, durationSeconds: I
   var currentPrice : Int = startingPrice
   var currentWinner : ActorRef = _
 
-  scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, BidTimerExpired)
+  system.scheduler.scheduleOnce(durationSeconds seconds, self, BidTimerExpired)
 
+  // created
   override def receive: Receive = {
     case Bid(bidder, offer) if offer >= currentPrice => {
       currentPrice = offer
@@ -131,30 +129,45 @@ class NativeAkkaAuction(seller: ActorRef, startingPrice: Int, durationSeconds: I
       bidder ! BidSuccessful
       context become activated
     }
-  }
-
-  def created: Receive = {
-    case Bid(bidder, offer) if offer > currentPrice => {
-      currentPrice = offer
-      currentWinner = bidder
-      bidder ! BidSuccessful
-      context become activated
+    case Bid(bidder, _) => {
+      bidder ! BidRejected
     }
     case BidTimerExpired => {
-
+      scheduledMessage = system.scheduler.scheduleOnce(5 seconds, sender(), DeleteTimerExpired)
+      context become ignored
     }
   }
 
   def activated: Receive = {
-    null
+    case Bid(bidder, offer) if offer > currentPrice => {
+      currentPrice = offer
+      currentWinner = bidder
+      bidder ! BidSuccessful
+    }
+    case Bid(bidder, _) => {
+      bidder ! BidRejected
+    }
+    case BidTimerExpired => {
+      seller ! ItemSold(currentWinner, currentPrice, name)
+      currentWinner ! AuctionWon
+      scheduledMessage = system.scheduler.scheduleOnce(durationSeconds seconds, self, DeleteTimerExpired)
+      context become sold
+    }
   }
 
   def ignored: Receive = {
-null
+    case DeleteTimerExpired => {
+      context.stop(context.self)
+    }
+    case Relist => {
+      scheduledMessage.cancel
+      system.scheduler.scheduleOnce(durationSeconds seconds, self, BidTimerExpired)
+    }
   }
 
   def sold: Receive = {
-null
+    case DeleteTimerExpired => {
+      context stop self
+    }
   }
-
 }

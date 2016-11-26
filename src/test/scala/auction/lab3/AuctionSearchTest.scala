@@ -1,9 +1,8 @@
-package autcion
+package auction.lab3
 
 import akka.actor.ActorSystem
-import akka.actor.Status.Success
 import akka.testkit.{TestActorRef, TestKit}
-import autcion.AuctionSearch.{Query, RegisterAuction, SearchResult}
+import auction.lab3.AuctionSearch.{RegisterAuction, SearchResult}
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 
 class AuctionSearchTest extends TestKit(ActorSystem("SearchSpec"))

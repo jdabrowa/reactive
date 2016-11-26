@@ -1,10 +1,10 @@
-package autcion
+package auction.lab3
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import autcion.Auction.ItemSold
+import akka.actor.{Actor, ActorRef, Props}
+import auction.lab2.Auction.ItemSold
 
-import scala.util.Random
 import scala.collection.mutable
+import scala.util.Random
 
 object Seller {
 
