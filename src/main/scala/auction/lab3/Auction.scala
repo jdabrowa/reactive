@@ -3,6 +3,7 @@ package auction.lab3
 import java.time.LocalTime
 
 import akka.actor.{ActorRef, Cancellable, FSM}
+import akka.persistence.fsm.PersistentFSM.FSMState
 import auction.lab3.Auction._
 import auction.lab3.AuctionSearch.RegisterAuction
 
