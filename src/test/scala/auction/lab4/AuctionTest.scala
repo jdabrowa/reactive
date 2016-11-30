@@ -3,7 +3,7 @@ package auction.lab4
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import akka.testkit.{ImplicitSender, TestActorRef, TestFSMRef, TestKit, TestProbe}
 import auction.lab4.Auction._
 import org.scalatest.{BeforeAndAfter, WordSpecLike}
 
@@ -19,13 +19,9 @@ class AuctionTest extends TestKit(ActorSystem("SearchSpec")) with WordSpecLike w
       buyer = TestProbe("buyer")
     }
 
-    "initially be in 'created' state" in {
-      val fsm = TestActorRef(new FSMAuction(buyer.ref, 2, 3, "descr"))
-    }
-
     "accept offers if they meet criteria" in {
 
-      val fsm = TestActorRef(new FSMAuction(buyer.ref, 2, 3, "descr"))
+      val fsm = TestActorRef(new FSMAuction(seller.ref, 2, 3, "descr"))
       fsm ! Auction.Bid(buyer.ref, 1)
       buyer.expectMsgPF() {
         case a => println(a)

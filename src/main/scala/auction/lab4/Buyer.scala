@@ -31,14 +31,13 @@ class Buyer(keyword: String) extends Actor {
       }
     }
     case(BidRejected(currentPrice)) => {
-      val lastPrice = lastPrices(sender)
-      val newPrice = lastPrice * multiplier
+      val newPrice = currentPrice * multiplier
       if (newPrice <= maxPrice) {
-        log(s"Bid rejected (current offer is: $currentPrice")
+        log(s"Bid rejected (current offer is: $currentPrice)")
         lastPrices(sender) = newPrice
         bid(sender)
       } else {
-        log("Bid rejected, cannot offer more. Fold.")
+        log(s"Bid rejected (is $currentPrice), cannot offer more. Fold.")
       }
     }
 
@@ -48,7 +47,7 @@ class Buyer(keyword: String) extends Actor {
   }
 
   def bid(auction: ActorRef): Unit = {
-    TimeUnit.MILLISECONDS.sleep(Random.nextInt(300))
+    TimeUnit.MILLISECONDS.sleep(Random.nextInt(1000))
     log("bidding auction " + auction.path.name + " with price " + lastPrices(auction))
 
     auction ! Auction.Bid(self, lastPrices(auction))

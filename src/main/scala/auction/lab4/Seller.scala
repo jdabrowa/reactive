@@ -23,7 +23,7 @@ class Seller(names: List[(String, String)], childMaker: AuctionParams => ActorRe
 
   for(auctionName <- names) {
     val startingPrice: Int = 1 + Random.nextInt(3)
-    val auction: ActorRef = childMaker(AuctionParams(self, startingPrice, 5 + Random.nextInt(5), auctionName._2, auctionName._1))
+    val auction: ActorRef = childMaker(AuctionParams(self, startingPrice, 8 + Random.nextInt(8), auctionName._2, auctionName._1))
     auctions += (auction -> auctionName._1)
     log(s"Created auction: ${auctionName._2} with price $startingPrice")
   }
