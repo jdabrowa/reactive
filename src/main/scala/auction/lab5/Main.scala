@@ -1,14 +1,16 @@
 package auction.lab5
 
 import akka.actor.{ActorSystem, Props}
+import auction.lab5.Notifier.Notify
+import com.typesafe.config.ConfigFactory
 
 import scala.util.Random
 
 object Main extends App {
 
-  var system = ActorSystem("system")
+  var system = ActorSystem("system", ConfigFactory.load().getConfig("auction-system"))
 
-  runLab5
+  system.actorOf(Props[Notifier], "notifier") ! Notify("a", "b", 5)
 
   def runLab5: Any = {
     val auctionNames = List(
