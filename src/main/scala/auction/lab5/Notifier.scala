@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Actor
 import akka.util.Timeout
-import auction.lab5.Notifier.{HealthCheck, HealthCheckResponse, Notify}
+import auction.lab5.Notifier.{HealthCheckResponse, Notify}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
@@ -21,8 +21,6 @@ class Notifier extends Actor {
   implicit val timeout = Timeout(5, TimeUnit.SECONDS)
   val publisherFuture = context.actorSelection("akka.tcp://AuctionPublisherSystem@127.0.0.1:2552/user/publisher").resolveOne(FiniteDuration(5, "seconds"))
   val publisher = Await.result(publisherFuture, timeout.duration)
-
-  var future = publisher ! HealthCheck
 
   override def receive: Receive = {
     case Notify(title, buyer, price) => {

@@ -8,6 +8,7 @@ import akka.persistence.fsm.PersistentFSM
 import akka.persistence.fsm.PersistentFSM.FSMState
 import auction.lab5.Auction._
 import auction.lab5.AuctionSearch.RegisterAuction
+import auction.lab5.Notifier.Notify
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -105,6 +106,8 @@ class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, des
   import system.dispatcher
 
   context.actorSelection("/user/auctionSearch") ! RegisterAuction(description)
+  val notifier = context.actorSelection("/user/notifier")
+
   self ! NotifyTTL(TimeUnit.SECONDS.toMillis(durationSeconds))
   private val endTime = System.currentTimeMillis() + durationSeconds * 1000
 
@@ -184,7 +187,7 @@ class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, des
   override def applyEvent(domainEvent: AuctionEvent, currentData: AuctionDetails): AuctionDetails = {
     domainEvent match {
       case SuccessfulBidEvent(bidder, offer) => {
-        //        log("h")
+        notifier ! Notify(self.path.name, bidder.path.name, offer)
         Bidded(bidder, offer)
       }
       case IgnoredEvent() => {

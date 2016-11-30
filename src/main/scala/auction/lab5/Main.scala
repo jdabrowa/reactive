@@ -1,7 +1,6 @@
 package auction.lab5
 
 import akka.actor.{ActorSystem, Props}
-import auction.lab5.Notifier.Notify
 import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.util.Random
@@ -11,7 +10,8 @@ object Main extends App {
   private val config: Config = ConfigFactory.load
   var system = ActorSystem("system", config.getConfig("auction-system").withFallback(config))
 
-  system.actorOf(Props[Notifier], "notifier") ! Notify("a", "b", 5)
+
+  runLab5
 
   def runLab5: Any = {
     val auctionNames = List(
@@ -20,6 +20,7 @@ object Main extends App {
       ("Samochodzik zdalnie niby opel sterowany na bluetooth", "samochodzik")
     )
 
+    system.actorOf(Props[Notifier], "notifier")
     system.actorOf(Props[AuctionSearch], "auctionSearch")
     system.actorOf(Props(new Seller(auctionNames, Seller.defaultChildMaker(system))), "seller")
 
