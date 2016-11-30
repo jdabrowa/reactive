@@ -11,7 +11,7 @@ object Notifier {
 class Notifier extends Actor {
 
   override def receive: Receive = {
-
+    ???
   }
 
   def log(msg: String): Unit = {
