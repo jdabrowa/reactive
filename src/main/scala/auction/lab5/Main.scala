@@ -10,7 +10,6 @@ object Main extends App {
   private val config: Config = ConfigFactory.load
   var system = ActorSystem("system", config.getConfig("auction-system").withFallback(config))
 
-
   runLab5
 
   def runLab5: Any = {

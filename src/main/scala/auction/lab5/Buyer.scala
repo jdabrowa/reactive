@@ -15,7 +15,7 @@ class Buyer(keyword: String) extends Actor {
   var auctions: mutable.MutableList[ActorRef] = mutable.MutableList.empty[ActorRef]
 
   var lastPrices: mutable.Map[ActorRef, Integer] = mutable.Map.empty[ActorRef, Integer]
-  def multiplier: Int = 2 + Random.nextInt(3)
+  def add: Int = 5 + Random.nextInt(10)
   def maxPrice = 15 + Random.nextInt(100)
 
   TimeUnit.MILLISECONDS.sleep(Random.nextInt(1000))
@@ -31,7 +31,7 @@ class Buyer(keyword: String) extends Actor {
       }
     }
     case(BidRejected(currentPrice)) => {
-      val newPrice = currentPrice * multiplier
+      val newPrice = currentPrice + add
       if (newPrice <= maxPrice) {
         log(s"Bid rejected (current offer is: $currentPrice)")
         lastPrices(sender) = newPrice
