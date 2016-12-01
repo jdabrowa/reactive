@@ -8,7 +8,7 @@ import akka.persistence.fsm.PersistentFSM
 import akka.persistence.fsm.PersistentFSM.FSMState
 import auction.lab5.Auction._
 import auction.lab5.AuctionSearch.RegisterAuction
-import auction.lab5.Notifier.Notify
+import auction.lab5.Notifier.{AuctionWonNotify, BidNotify, Notify}
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -142,6 +142,7 @@ class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, des
       //      log("e")
       winner ! AuctionWon
       seller ! ItemSold(winner, finalOffer)
+      notifier ! AuctionWonNotify(self.path.name, winner.path.name, finalOffer)
       goto(Sold) applying SoldEvent()
     }
   }
@@ -187,7 +188,7 @@ class FSMAuction(seller: ActorRef, startingPrice: Int, durationSeconds: Int, des
   override def applyEvent(domainEvent: AuctionEvent, currentData: AuctionDetails): AuctionDetails = {
     domainEvent match {
       case SuccessfulBidEvent(bidder, offer) => {
-        notifier ! Notify(self.path.name, bidder.path.name, offer)
+        notifier ! BidNotify(self.path.name, bidder.path.name, offer)
         Bidded(bidder, offer)
       }
       case IgnoredEvent() => {

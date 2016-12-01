@@ -7,8 +7,9 @@ import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props}
 import auction.lab5.Notifier.{ChildRestarted, Execute, Notify}
 
 object Notifier {
-  sealed case class Notify(auctionTitle: String, buyerName: String, currentPrice: Integer)
-  sealed case class AuctionWonNotify(auctionTitle: String, buyerName: String, currentPrice: Integer)
+  sealed trait Notify
+  sealed case class BidNotify(auctionTitle: String, buyerName: String, currentPrice: Integer) extends Notify
+  sealed case class AuctionWonNotify(auctionTitle: String, buyerName: String, currentPrice: Integer) extends Notify
   case object NotifyReceived
   case object Execute
   sealed case class ChildRestarted(child: ActorRef)
@@ -17,7 +18,7 @@ object Notifier {
 class Notifier extends Actor {
 
   override def receive: Receive = {
-    case notification @ Notify(title, buyer, price) => {
+    case notification: Notify => {
       val childRequest = context.actorOf(Props(new NotifierRequest(notification)))
       childRequest ! Execute
     }
